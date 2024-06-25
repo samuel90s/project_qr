@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Product;
-use Chillerlan\QRCode\QRCode;
-use Chillerlan\QRCode\QROptions;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 
 class ProductController extends Controller
 {
@@ -103,6 +103,8 @@ class ProductController extends Controller
         $data = route('admin/products/edit', ['id' => $product->id]);
         $qrCodeImage = $this->generateQrCode($data);
 
-        return response($qrCodeImage)->header('Content-Type', 'image/png');
+        return response($qrCodeImage)
+            ->header('Content-Type', 'image/png')
+            ->header('Content-Disposition', 'attachment; filename="qrcode.png"');
     }
 }

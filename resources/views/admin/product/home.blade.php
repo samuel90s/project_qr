@@ -51,7 +51,8 @@
                                             class="btn btn-danger">Delete</a>
                                     </td>
                                     <td>
-                                        <img src="{{ route('admin/products/qrcode', $product->id) }}" alt="QR Code">
+                                        <a href="{{ route('admin/products/qrcode', $product->id) }}"
+                                            class="btn btn-secondary">Download QR Code</a>
                                     </td>
                                 </tr>
                                 @php
