@@ -89,7 +89,10 @@ class ProductController extends Controller
         ]);
 
         $qrcode = new QRCode($options);
-        return $qrcode->render($text);
+        $imagePath = public_path('qrcode.png'); // Save the image to a file
+        $qrcode->render($text, $imagePath);
+
+        return $imagePath; // Return the file path
     }
 
     public function showQrCode($id)
@@ -100,11 +103,24 @@ class ProductController extends Controller
             return response()->json(['message' => 'Product not found'], 404);
         }
 
-        $data = route('admin/products/edit', ['id' => $product->id]);
-        $qrCodeImage = $this->generateQrCode($data);
+        $data = route('admin/products/detail', ['id' => $product->id]); // Link to the detail page
+        $qrCodePath = $this->generateQrCode($data); // Generate the QR code and get the file path
 
-        return response($qrCodeImage)
-            ->header('Content-Type', 'image/png')
-            ->header('Content-Disposition', 'attachment; filename="qrcode.png"');
+        return response()->download($qrCodePath, 'qrcode.png', [
+            'Content-Type' => 'image/png'
+        ]);
     }
+
+
+    public function detail($id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return redirect()->route('admin/products')->with(['error' => 'Product not found']);
+        }
+
+        return view('admin.product.detail', compact('product'));
+    }
+
 }

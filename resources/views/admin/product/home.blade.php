@@ -41,7 +41,8 @@
                                     <td>{{ $i }}</td>
                                     <td>{{ $product->title }}</td>
                                     <td>{{ $product->category }}</td>
-                                    <td>{{ $product->price }}</td>
+                                    <td>{{ number_format($product->price, 2, ',', '.') }} IDR</td>
+                                    <!-- Format the price -->
                                     <td>{{ $product->serial }}</td>
                                     <td>{{ $product->certificate }}</td>
                                     <td>
@@ -49,6 +50,8 @@
                                             class="btn btn-primary">Edit</a>
                                         <a href="{{ route('admin/products/delete', $product->id) }}"
                                             class="btn btn-danger">Delete</a>
+                                        {{-- <a href="{{ route('admin/products/detail', $product->id) }}"
+                                            class="btn btn-info">Detail</a> --}}
                                     </td>
                                     <td>
                                         <a href="{{ route('admin/products/qrcode', $product->id) }}"

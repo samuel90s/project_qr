@@ -28,6 +28,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/products/{id}/update', [ProductController::class, 'update'])->name('admin/products/update');
     Route::get('/admin/products/{id}/delete', [ProductController::class, 'delete'])->name('admin/products/delete');
     Route::get('/admin/products/{id}/qrcode', [ProductController::class, 'showQrCode'])->name('admin/products/qrcode');
+    Route::get('/admin/products/{id}/detail', [ProductController::class, 'detail'])->name('admin/products/detail');
 });
 
 
