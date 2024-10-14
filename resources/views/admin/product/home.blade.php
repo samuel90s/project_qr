@@ -33,37 +33,29 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @php
-                                $i = 1;
-                            @endphp
                             @foreach ($products as $product)
                                 <tr>
-                                    <td>{{ $i }}</td>
+                                    <td>{{ $loop->iteration }}</td> <!-- Menggunakan $loop->iteration untuk nomor urut -->
                                     <td>{{ $product->title }}</td>
                                     <td>{{ $product->category }}</td>
-                                    <td>{{ number_format($product->price, 2, ',', '.') }} IDR</td>
-                                    <!-- Format the price -->
+                                    <td>{{ number_format($product->price, 2, ',', '.') }} IDR</td> <!-- Memformat harga -->
                                     <td>{{ $product->serial }}</td>
                                     <td>{{ $product->certificate }}</td>
                                     <td>
-                                        <a href="{{ route('admin/products/edit', $product->id) }}"
-                                            class="btn btn-primary">Edit</a>
-                                        <a href="{{ route('admin/products/delete', $product->id) }}"
-                                            class="btn btn-danger">Delete</a>
-                                        {{-- <a href="{{ route('admin/products/detail', $product->id) }}"
-                                            class="btn btn-info">Detail</a> --}}
+                                        <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-primary">Edit</a>
+                                        <a href="{{ route('admin.products.delete', $product->id) }}" class="btn btn-danger"
+                                           onclick="return confirm('Are you sure you want to delete this product?')">Delete</a>
                                     </td>
                                     <td>
-                                        <a href="{{ route('admin/products/qrcode', $product->id) }}"
-                                            class="btn btn-secondary">Download QR Code</a>
+                                        <a href="{{ route('admin.products.qrcode', $product->id) }}" class="btn btn-secondary">
+                                            Download QR Code
+                                        </a>
                                     </td>
                                 </tr>
-                                @php
-                                    $i++;
-                                @endphp
                             @endforeach
                         </tbody>
                     </table>
+
                 </div>
             </div>
         </div>
