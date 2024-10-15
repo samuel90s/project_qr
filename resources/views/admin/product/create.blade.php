@@ -24,7 +24,7 @@
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label for="title" class="form-label">Title</label>
-                                <input type="text" name="title" class="form-control" placeholder="Title">
+                                <input type="text" name="title" class="form-control" placeholder="Title" value="{{ old('title') }}">
                                 @error('title')
                                     <span class="text-danger">{{ $message }}</span>
                                 @enderror
@@ -44,28 +44,37 @@
                             </div>
                             <div class="col-md-4">
                                 <label for="price" class="form-label">Price</label>
-                                <input type="text" name="price" class="form-control" placeholder="Price">
-                                @error('title')
+                                <input type="text" name="price" class="form-control" placeholder="Price" value="{{ old('price') }}">
+                                @error('price')
                                     <span class="text-danger">{{ $message }}</span>
                                 @enderror
                             </div>
                         </div>
+
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label for="serial" class="form-label">Serial</label>
-                                <input type="text" name="serial" class="form-control" placeholder="Serial">
+                                <input type="text" name="serial" class="form-control" placeholder="Serial" value="{{ old('serial') }}">
                                 @error('serial')
                                     <span class="text-danger">{{ $message }}</span>
                                 @enderror
                             </div>
                             <div class="col-md-4">
                                 <label for="certificate" class="form-label">Certificate</label>
-                                <input type="text" name="certificate" class="form-control" placeholder="Certificate">
+                                <input type="text" name="certificate" class="form-control" placeholder="Certificate" value="{{ old('certificate') }}">
                                 @error('certificate')
                                     <span class="text-danger">{{ $message }}</span>
                                 @enderror
                             </div>
+                            <div class="col-md-4">
+                                <label for="code_manufactur" class="form-label">Code Manufactur</label>
+                                <input type="text" name="code_manufactur" class="form-control" placeholder="Code Manufactur" value="{{ old('code_manufactur') }}">
+                                @error('code_manufactur')
+                                    <span class="text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
                         </div>
+
                         <div class="row">
                             <div class="d-grid">
                                 <button class="btn btn-primary">Submit</button>
@@ -76,4 +85,5 @@
             </div>
         </div>
     </div>
+
 </x-app-layout>

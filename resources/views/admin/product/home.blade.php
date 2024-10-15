@@ -28,6 +28,7 @@
                                 <th>Price</th>
                                 <th>Serial</th>
                                 <th>Certificate</th>
+                                <th>Code Manufactur</th> <!-- Menambahkan kolom code_manufactur -->
                                 <th>Actions</th>
                                 <th>QR Code</th>
                             </tr>
@@ -41,21 +42,25 @@
                                     <td>{{ number_format($product->price, 2, ',', '.') }} IDR</td> <!-- Memformat harga -->
                                     <td>{{ $product->serial }}</td>
                                     <td>{{ $product->certificate }}</td>
+                                    <td>{{ $product->code_manufactur }}</td> <!-- Menampilkan code_manufactur -->
                                     <td>
                                         <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-primary">Edit</a>
                                         <a href="{{ route('admin.products.delete', $product->id) }}" class="btn btn-danger"
                                            onclick="return confirm('Are you sure you want to delete this product?')">Delete</a>
                                     </td>
                                     <td>
-                                        <a href="{{ route('admin.products.qrcode', $product->id) }}" class="btn btn-secondary">
-                                            Download QR Code
-                                        </a>
+                                        @if($product->qr_code_path) <!-- Cek apakah QR code sudah di-generate -->
+                                            <img src="{{ asset($product->qr_code_path) }}" alt="QR Code" width="50" height="50"> <!-- Menampilkan gambar QR -->
+                                        @else
+                                            <a href="{{ route('admin.products.qrcode', $product->id) }}" class="btn btn-secondary">
+                                                Generate QR Code
+                                            </a>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
-
                 </div>
             </div>
         </div>

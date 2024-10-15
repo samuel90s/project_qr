@@ -15,5 +15,6 @@ class Product extends Model
         'price',
         'serial',
         'certificate',
+        'code_manufactur'
     ];
 }

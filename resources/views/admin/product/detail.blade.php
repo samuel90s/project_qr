@@ -14,6 +14,7 @@
                     <p>Category: {{ $product->category }}</p>
                     <p>Price: {{ number_format($product->price, 2, ',', '.') }} IDR</p> <!-- Format the price -->
                     <p>Certificate: {{ $product->certificate }}</p>
+                    <p>Code Manufactur: {{ $product->code_manufactur }}</p> <!-- Menampilkan code_manufactur -->
                 </div>
             </div>
         </div>

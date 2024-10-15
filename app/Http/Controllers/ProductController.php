@@ -25,11 +25,12 @@ class ProductController extends Controller
     public function save(Request $request)
     {
         $validation = $request->validate([
-            'title' => 'required',
-            'price' => 'required',
-            'category' => 'required',
-            'serial' => 'required',
-            'certificate' => 'required',
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|max:255',
+            'price' => 'required|numeric',
+            'serial' => 'required|string|max:255',
+            'certificate' => 'required|string|max:255',
+            'code_manufactur' => 'required|string|max:255|unique:products,code_manufactur',
         ]);
         $data = Product::create($validation);
         if ($data) {
