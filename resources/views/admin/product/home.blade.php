@@ -11,7 +11,7 @@
                 <div class="p-6 text-gray-900">
                     <div class="d-flex align-items-center justify-content-between">
                         <h2 class="mb-0">List Product</h2>
-                        <a href="{{ route('admin/products/create') }}" class="btn btn-primary">Add Product</a>
+                        {{-- <a href="{{ route('admin.products.create') }}" class="btn btn-primary">Add Product</a> --}}
                     </div>
                     <hr>
                     @if (Session::has('success'))
