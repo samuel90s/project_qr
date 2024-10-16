@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -119,46 +120,51 @@ public function update(Request $request, $id)
     }
 
     public function generateQrCode($text)
-    {
-        $options = new QROptions([
-            'version'    => 5,
-            'outputType' => QRCode::OUTPUT_IMAGE_PNG,
-            'eccLevel'   => QRCode::ECC_L,
-        ]);
+{
+    $options = new QROptions([
+        'version'    => 5,
+        'outputType' => QRCode::OUTPUT_IMAGE_PNG,
+        'eccLevel'   => QRCode::ECC_L,
+    ]);
 
-        $qrcode = new QRCode($options);
-        $imagePath = public_path('qrcode.png'); // Save the image to a file
-        $qrcode->render($text, $imagePath);
+    $qrcode = new QRCode($options);
+    $imagePath = public_path('qrcode_' . Str::random(10) . '.png'); // Buat nama file acak untuk menghindari penimpaan
+    $qrcode->render($text, $imagePath);
 
-        return $imagePath; // Return the file path
+    return $imagePath; // Kembalikan path file
+}
+
+public function showQrCode($id)
+{
+    $product = Product::find($id);
+
+    if (!$product) {
+        return response()->json(['message' => 'Product not found'], 404);
     }
 
-    public function showQrCode($id)
-    {
-        $product = Product::find($id);
+    // Menghasilkan link QR Code dengan format acak
+    $uniqueCode = Str::random(10); // Menghasilkan kode acak
+    $data = route('admin.products.detail', ['id' => $product->id, 'code' => $uniqueCode]); // Link detail produk
 
-        if (!$product) {
-            return response()->json(['message' => 'Product not found'], 404);
-        }
+    // Simpan link QR Code dalam database jika diperlukan
+    // $product->qr_code_link = $data; // Jika Anda ingin menyimpan link di database
+    // $product->save();
 
-        $data = route('admin.products.detail', ['id' => $product->id]); // Link to the detail page
-        $qrCodePath = $this->generateQrCode($data); // Generate the QR code and get the file path
+    $qrCodePath = $this->generateQrCode($data); // Generate QR code dan ambil path file
 
-        return response()->download($qrCodePath, 'qrcode.png', [
-            'Content-Type' => 'image/png'
-        ]);
+    return response()->download($qrCodePath, 'qrcode.png', [
+        'Content-Type' => 'image/png'
+    ]);
+}
+
+public function detail($id)
+{
+    $product = Product::find($id);
+
+    if (!$product) {
+        return redirect()->route('admin.products')->with(['error' => 'Product not found']);
     }
 
-
-    public function detail($id)
-    {
-        $product = Product::find($id);
-
-        if (!$product) {
-            return redirect()->route('admin.products')->with(['error' => 'Product not found']);
-        }
-
-        return view('admin.product.detail', compact('product'));
-    }
-
+    return view('admin.product.detail', compact('product'));
+}
 }
