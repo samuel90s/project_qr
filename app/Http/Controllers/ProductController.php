@@ -35,10 +35,10 @@ class ProductController extends Controller
         $data = Product::create($validation);
         if ($data) {
             session()->flash('success', 'Product Added Successfully');
-            return redirect(route('admin/products'));
+            return redirect(route('admin.products'));
         } else {
             session()->flash('error', 'Some Problem Occurred');
-            return redirect(route('admin/products/create'));
+            return redirect(route('admin.products/create'));
         }
     }
 
@@ -67,7 +67,7 @@ class ProductController extends Controller
 
         $product->save();
 
-        return redirect()->route('admin/products')->with(['success' => 'Product updated successfully']);
+        return redirect()->route('admin.products')->with(['success' => 'Product updated successfully']);
     }
 
     public function delete(Request $request, $id)
@@ -75,9 +75,9 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
 
         if ($product->delete()) {
-            return redirect()->route('admin/products')->with(['success' => 'Product deleted successfully']);
+            return redirect()->route('admin.products')->with(['success' => 'Product deleted successfully']);
         } else {
-            return redirect()->route('admin/products')->with(['error' => 'Failed to delete product']);
+            return redirect()->route('admin.products')->with(['error' => 'Failed to delete product']);
         }
     }
 
@@ -104,7 +104,7 @@ class ProductController extends Controller
             return response()->json(['message' => 'Product not found'], 404);
         }
 
-        $data = route('admin/products/detail', ['id' => $product->id]); // Link to the detail page
+        $data = route('admin.products.detail', ['id' => $product->id]); // Link to the detail page
         $qrCodePath = $this->generateQrCode($data); // Generate the QR code and get the file path
 
         return response()->download($qrCodePath, 'qrcode.png', [
@@ -118,7 +118,7 @@ class ProductController extends Controller
         $product = Product::find($id);
 
         if (!$product) {
-            return redirect()->route('admin/products')->with(['error' => 'Product not found']);
+            return redirect()->route('admin.products')->with(['error' => 'Product not found']);
         }
 
         return view('admin.product.detail', compact('product'));

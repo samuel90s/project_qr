@@ -9,17 +9,25 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
                         <h2 class="mb-0">List Product</h2>
-                        {{-- <a href="{{ route('admin.products.create') }}" class="btn btn-primary">Add Product</a> --}}
+                        <a href="{{ route('admin.products.create') }}" class="btn btn-primary">Add Product</a>
                     </div>
                     <hr>
+
                     @if (Session::has('success'))
                         <div class="alert alert-success" role="alert">
                             {{ Session::get('success') }}
                         </div>
                     @endif
-                    <table class="table table-striped">
+
+                    @if (Session::has('error'))
+                        <div class="alert alert-danger" role="alert">
+                            {{ Session::get('error') }}
+                        </div>
+                    @endif
+
+                    <table class="table table-striped table-bordered">
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -28,7 +36,7 @@
                                 <th>Price</th>
                                 <th>Serial</th>
                                 <th>Certificate</th>
-                                <th>Code Manufactur</th> <!-- Menambahkan kolom code_manufactur -->
+                                <th>Code Manufacturer</th>
                                 <th>Actions</th>
                                 <th>QR Code</th>
                             </tr>
@@ -36,21 +44,21 @@
                         <tbody>
                             @foreach ($products as $product)
                                 <tr>
-                                    <td>{{ $loop->iteration }}</td> <!-- Menggunakan $loop->iteration untuk nomor urut -->
+                                    <td>{{ $loop->iteration }}</td>
                                     <td>{{ $product->title }}</td>
                                     <td>{{ $product->category }}</td>
-                                    <td>{{ number_format($product->price, 2, ',', '.') }} IDR</td> <!-- Memformat harga -->
+                                    <td>{{ number_format($product->price, 2, ',', '.') }} IDR</td>
                                     <td>{{ $product->serial }}</td>
                                     <td>{{ $product->certificate }}</td>
-                                    <td>{{ $product->code_manufactur }}</td> <!-- Menampilkan code_manufactur -->
+                                    <td>{{ $product->code_manufactur }}</td>
                                     <td>
                                         <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-primary">Edit</a>
                                         <a href="{{ route('admin.products.delete', $product->id) }}" class="btn btn-danger"
                                            onclick="return confirm('Are you sure you want to delete this product?')">Delete</a>
                                     </td>
                                     <td>
-                                        @if($product->qr_code_path) <!-- Cek apakah QR code sudah di-generate -->
-                                            <img src="{{ asset($product->qr_code_path) }}" alt="QR Code" width="50" height="50"> <!-- Menampilkan gambar QR -->
+                                        @if($product->qr_code_path)
+                                            <img src="{{ asset($product->qr_code_path) }}" alt="QR Code" width="50" height="50">
                                         @else
                                             <a href="{{ route('admin.products.qrcode', $product->id) }}" class="btn btn-secondary">
                                                 Generate QR Code
