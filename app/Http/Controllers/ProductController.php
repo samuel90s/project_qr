@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use chillerlan\QRCode\QRCode;
@@ -24,6 +24,12 @@ class ProductController extends Controller
 
     public function save(Request $request)
     {
+        // Pastikan pengguna sudah login
+        if (!Auth::check()) {
+            return redirect()->route('login')->withErrors(['message' => 'You need to be logged in.']);
+        }
+
+        // Validasi data yang diterima
         $validation = $request->validate([
             'title' => 'required|string|max:255',
             'category' => 'required|string|max:255',
@@ -32,43 +38,74 @@ class ProductController extends Controller
             'certificate' => 'required|string|max:255',
             'code_manufactur' => 'required|string|max:255|unique:products,code_manufactur',
         ]);
-        $data = Product::create($validation);
-        if ($data) {
-            session()->flash('success', 'Product Added Successfully');
-            return redirect(route('admin.products'));
-        } else {
-            session()->flash('error', 'Some Problem Occurred');
-            return redirect(route('admin.products/create'));
+
+        // Tambahkan ID pengguna yang sedang login ke data produk
+        $validation['created_by'] = Auth::id(); // Menggunakan Auth::id()
+
+        // Buat produk baru
+        try {
+            $data = Product::create($validation);
+
+            // Cek apakah data berhasil disimpan
+            if ($data) {
+                session()->flash('success', 'Product Added Successfully');
+                return redirect(route('admin.products'));
+            }
+        } catch (\Exception $e) {
+            // Jika terjadi kesalahan saat menyimpan data
+            session()->flash('error', 'Some Problem Occurred: ' . $e->getMessage());
+            return redirect()->back()->withInput();
         }
+
+        // Jika tidak berhasil, kembalikan ke form dengan error
+        session()->flash('error', 'Some Problem Occurred');
+        return redirect(route('admin.products.create'))->withInput();
     }
+
+
 
     public function edit($id)
-    {
-        $product = Product::find($id);
-        return view('admin.product.edit', compact('product'));
+{
+    $product = Product::find($id);
+    return view('admin.product.edit', compact('product'));
+}
+
+public function update(Request $request, $id)
+{
+    $product = Product::findOrFail($id);
+
+    // Validasi data jika diperlukan
+    $request->validate([
+        'title' => 'required|string|max:255',
+        'category' => 'required|string|max:255',
+        'price' => 'required|string|max:255',
+        'serial' => 'required|string|max:255',
+        'certificate' => 'nullable|string|max:255',
+        'image' => 'nullable|image|max:2048',
+    ]);
+
+    // Update atribut produk
+    $product->title = $request->title;
+    $product->category = $request->category;
+    $product->price = $request->price;
+    $product->serial = $request->serial;
+    $product->certificate = $request->certificate;
+
+    // Tambahkan ID pengguna yang mengedit produk
+    $product->edited_by = Auth::id(); // Menggunakan Auth untuk mendapatkan ID pengguna
+
+    if ($request->hasFile('image')) {
+        $image = $request->file('image');
+        $filename = $image->getClientOriginalName();
+        $image->move(public_path('images/products'), $filename);
+        $product->image = $filename; // Jika ada kolom gambar di tabel
     }
 
-    public function update(Request $request, $id)
-    {
-        $product = Product::findOrFail($id);
+    $product->save();
 
-        $product->title = $request->title;
-        $product->category = $request->category;
-        $product->price = $request->price;
-        $product->serial = $request->serial;
-        $product->certificate = $request->certificate;
+    return redirect()->route('admin.products')->with(['success' => 'Product updated successfully']);
+}
 
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $filename = $image->getClientOriginalName();
-            $image->move(public_path('images/products'), $filename);
-            $product->image = $filename;
-        }
-
-        $product->save();
-
-        return redirect()->route('admin.products')->with(['success' => 'Product updated successfully']);
-    }
 
     public function delete(Request $request, $id)
     {

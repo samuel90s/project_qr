@@ -15,6 +15,8 @@ class Product extends Model
         'price',
         'serial',
         'certificate',
-        'code_manufactur'
+        'code_manufactur',
+        'created_by',
+        'edited_by'
     ];
 }
