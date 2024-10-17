@@ -16,9 +16,24 @@ class Admin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::user()->role !== 'admin' && Auth::user()->role !== 'branch_admin') {
+        $user = Auth::user();
+
+        if ($user->role === 'admin' || $user->role === 'branch_admin') {
+            // Admin atau branch_admin memiliki akses penuh
+            return $next($request);
+        }
+
+        if ($user->role === 'user') {
+            // Hanya perbolehkan user mengakses halaman produk untuk melihat
+            if ($request->is('admin/products') || $request->is('admin/products/*')) {
+                return $next($request);
+            }
+
+            // Jika user mengakses rute lain, arahkan ke halaman home
             return redirect('/');
         }
-        return $next($request);
+
+        // Jika bukan admin, branch_admin, atau user, redirect ke beranda
+        return redirect('/');
     }
 }
