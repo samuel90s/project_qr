@@ -52,6 +52,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/admin/users', [AdminController::class, 'index'])->name('admin.users.index');
         Route::post('/admin/users/{user}/confirm', [AdminController::class, 'confirm'])->name('admin.users.confirm');
         Route::post('/admin/users/{user}/reject', [AdminController::class, 'reject'])->name('admin.users.reject');
+
+
+        // Rute untuk manajemen pengguna
+        Route::get('/admin/users', [AdminController::class, 'index'])->name('admin.users.index');
+        Route::get('/admin/users/{user}', [AdminController::class, 'show'])->name('admin.users.detail'); // Route untuk detail pengguna
+        Route::post('/admin/users/{user}/confirm', [AdminController::class, 'confirm'])->name('admin.users.confirm');
+        Route::post('/admin/users/{user}/reject', [AdminController::class, 'reject'])->name('admin.users.reject');
     });
 
     // Rute untuk branch admin
