@@ -23,7 +23,13 @@ class User extends Authenticatable implements MustVerifyEmail
         'username',
         'email',
         'password',
+        'branch_id',
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     /**
      * The attributes that should be hidden for serialization.

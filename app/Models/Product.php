@@ -17,6 +17,11 @@ class Product extends Model
         'certificate',
         'code_manufactur',
         'created_by',
-        'edited_by'
+        'edited_by',
+        'branch_id'
     ];
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 }

@@ -18,7 +18,7 @@
             <x-input-error :messages="$errors->get('company')" class="mt-2" />
         </div>
 
-        {{-- Username --}}
+        <!-- Username -->
         <div>
             <x-input-label for="username" :value="__('Username')" />
             <x-text-input id="username" class="block mt-1 w-full" type="text" name="username" :value="old('username')"
@@ -26,23 +26,11 @@
             <x-input-error :messages="$errors->get('username')" class="mt-2" />
         </div>
 
-        <!-- Branch Selection -->
-        <div>
-            <x-input-label for="branch_id" :value="__('Branch')" />
-            <select id="branch_id" class="block mt-1 w-full" name="branch_id" required>
-                <option value="">{{ __('Select Branch') }}</option>
-                @foreach($branches as $branch)
-                    <option value="{{ $branch->id }}">{{ $branch->name }}</option>
-                @endforeach
-            </select>
-            <x-input-error :messages="$errors->get('branch_id')" class="mt-2" />
-        </div>
-
         <!-- Email Address -->
         <div class="mt-4">
             <x-input-label for="email" :value="__('Email')" />
             <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')"
-                required autocomplete="email" />
+                required autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
@@ -60,6 +48,17 @@
             <x-text-input id="password_confirmation" class="block mt-1 w-full" type="password"
                 name="password_confirmation" required autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+        </div>
+
+        <!-- Select Branch -->
+        <div class="mt-4">
+            <x-input-label for="branch_id" :value="__('Select Branch')" />
+            <select id="branch_id" name="branch_id" class="block mt-1 w-full" required>
+                @foreach ($branches as $branch)
+                    <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                @endforeach
+            </select>
+            <x-input-error :messages="$errors->get('branch_id')" class="mt-2" />
         </div>
 
         <div class="flex items-center justify-end mt-4">

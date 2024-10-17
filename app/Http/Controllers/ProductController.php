@@ -12,8 +12,20 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::orderBy('id', 'desc')->get();
-        $total = Product::count();
+        $user = Auth::user(); // Ambil pengguna yang sedang login
+
+        if ($user->role === 'admin') {
+            // Jika admin, ambil semua produk
+            $products = Product::orderBy('id', 'desc')->get();
+        } elseif ($user->role === 'branch_admin') {
+            // Jika branch admin, ambil produk berdasarkan branch_id pengguna
+            $products = Product::where('branch_id', $user->branch_id)->orderBy('id', 'desc')->get();
+        } else {
+            // Jika user biasa, tidak ada produk yang ditampilkan
+            $products = collect(); // Mengembalikan koleksi kosong
+        }
+
+        $total = $products->count(); // Hitung total produk
 
         return view('admin.product.home', compact('products', 'total'));
     }
@@ -167,4 +179,36 @@ public function detail($id)
 
     return view('admin.product.detail', compact('product'));
 }
+public function createBranchProduct()
+{
+    return view('branch.products.create'); // Buat view untuk menambahkan produk
 }
+
+public function saveBranchProduct(Request $request)
+{
+    $request->validate([
+        'title' => 'required|string|max:255',
+        'category' => 'required|string|max:255',
+        'price' => 'required|numeric',
+        // Tambahkan validasi lainnya sesuai kebutuhan
+    ]);
+
+    // Mengambil branch_id dari pengguna yang sedang login
+    $branchId = Auth::user()->branch_id;
+
+    // Simpan produk baru
+    Product::create([
+        'title' => $request->title,
+        'category' => $request->category,
+        'price' => $request->price,
+        'branch_id' => $branchId, // Mengaitkan produk dengan cabang
+        // Tambahkan kolom lainnya sesuai kebutuhan
+    ]);
+
+    return redirect()->route('branch.products.index')->with('success', 'Product added successfully.');
+}
+
+}
+
+
+

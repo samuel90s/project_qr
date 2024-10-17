@@ -1,4 +1,6 @@
 <?php
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\AdminController; // Impor AdminControl
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\BranchController; // Pastikan Anda mengimpor BranchController
@@ -40,6 +42,17 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/branch/{branch}/edit', [BranchController::class, 'edit'])->name('admin.branch.edit');
     Route::put('/admin/branch/{branch}', [BranchController::class, 'update'])->name('admin.branch.update');
     Route::delete('/admin/branch/{id}', [BranchController::class, 'destroy'])->name('admin.branch.destroy');
+
+    Route::get('/admin/users', [AdminController::class, 'index'])->name('admin.users.index');
+    Route::post('/admin/users/{user}/confirm', [AdminController::class, 'confirm'])->name('admin.users.confirm');
+    Route::post('/admin/users/{user}/reject', [AdminController::class, 'reject'])->name('admin.users.reject');
+
+});
+
+// Route untuk branch admin
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/branch/products/create', [ProductController::class, 'createBranchProduct'])->name('branch.products.create');
+    Route::post('/branch/products/save', [ProductController::class, 'saveBranchProduct'])->name('branch.products.save');
 });
 
 require __DIR__.'/auth.php';

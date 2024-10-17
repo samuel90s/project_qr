@@ -27,6 +27,11 @@
                         </div>
                     @endif
 
+                    <!-- Menampilkan Total Produk -->
+                    <div class="mb-4">
+                        <strong>Total Products: </strong> {{ $total }}
+                    </div>
+
                     <table class="table table-striped table-bordered">
                         <thead>
                             <tr>
@@ -42,7 +47,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($products as $product)
+                            @forelse ($products as $product)
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $product->title }}</td>
@@ -66,7 +71,11 @@
                                         @endif
                                     </td>
                                 </tr>
-                            @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="text-center">No products available.</td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
