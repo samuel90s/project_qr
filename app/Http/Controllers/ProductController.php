@@ -20,14 +20,27 @@ class ProductController extends Controller
         } elseif ($user->role === 'branch_admin') {
             // Jika branch admin, ambil produk berdasarkan branch_id pengguna
             $products = Product::where('branch_id', $user->branch_id)->orderBy('id', 'desc')->get();
+        } elseif ($user->role === 'user') {
+            // Jika user biasa, ambil produk hanya di cabang mereka
+            $products = Product::where('branch_id', $user->branch_id)->orderBy('id', 'desc')->get();
         } else {
-            // Jika user biasa, tidak ada produk yang ditampilkan
+            // Jika tidak ada role yang dikenali
             $products = collect(); // Mengembalikan koleksi kosong
         }
 
         $total = $products->count(); // Hitung total produk
 
         return view('admin.product.home', compact('products', 'total'));
+    }
+
+
+    public function userIndex()
+    {
+        $user = Auth::user(); // Ambil pengguna yang sedang login
+        $products = Product::where('branch_id', $user->branch_id)->orderBy('id', 'desc')->get();
+        $total = $products->count();
+
+        return view('user.product.index', compact('products', 'total')); // Ganti 'user.product.index' sesuai dengan view kamu
     }
 
     public function create()

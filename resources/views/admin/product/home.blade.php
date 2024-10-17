@@ -5,13 +5,15 @@
         </h2>
     </x-slot>
 
-    <div class="py-12" >  {{-- option="readonly: role= user" --}}
+    <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     <div class="d-flex align-items-center justify-content-between mb-4">
                         <h2 class="mb-0">List Product</h2>
-                        <a href="{{ route('admin.products.create') }}" class="btn btn-primary">Add Product</a>
+                        @if (Auth::user()->role === 'admin')
+                            <a href="{{ route('admin.products.create') }}" class="btn btn-primary">Add Product</a>
+                        @endif
                     </div>
                     <hr>
 
@@ -57,9 +59,13 @@
                                     <td>{{ $product->certificate }}</td>
                                     <td>{{ $product->code_manufactur }}</td>
                                     <td>
-                                        <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-primary">Edit</a>
-                                        <a href="{{ route('admin.products.delete', $product->id) }}" class="btn btn-danger"
-                                           onclick="return confirm('Are you sure you want to delete this product?')">Delete</a>
+                                        @if (Auth::user()->role === 'admin' || Auth::user()->role === 'branch_admin')
+                                            <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-primary">Edit</a>
+                                            <a href="{{ route('admin.products.delete', $product->id) }}" class="btn btn-danger"
+                                               onclick="return confirm('Are you sure you want to delete this product?')">Delete</a>
+                                        @else
+                                            <span class="text-muted">No actions available</span>
+                                        @endif
                                     </td>
                                     <td>
                                         @if($product->qr_code_path)
