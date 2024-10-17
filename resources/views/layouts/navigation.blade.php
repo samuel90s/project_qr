@@ -14,9 +14,12 @@
                         {{ __('Products') }}
                     </x-nav-link>
                     <!-- Link untuk manajemen cabang -->
-                    <x-nav-link :href="route('admin.branch.index')" :active="request()->routeIs('admin.branch.index')">
-                        {{ __('Branches') }}
-                    </x-nav-link>
+                    <!-- Hanya admin yang bisa melihat link untuk manajemen cabang -->
+                    @if(Auth::check() && Auth::user()->role === 'admin')
+                        <x-nav-link :href="route('admin.branch.index')" :active="request()->routeIs('admin.branch.index')">
+                            {{ __('Branches') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 

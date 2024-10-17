@@ -16,7 +16,7 @@ class Admin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::user()->role !== 'admin' && Auth::user()->role !== 'branch admin') {
+        if (Auth::user()->role !== 'admin' && Auth::user()->role !== 'branch_admin') {
             return redirect('/');
         }
         return $next($request);

@@ -42,7 +42,7 @@ class ProductController extends Controller
             return redirect()->route('login')->withErrors(['message' => 'You need to be logged in.']);
         }
 
-        // Validasi data yang diterima
+        // Validasi data umum yang diterima
         $validation = $request->validate([
             'title' => 'required|string|max:255',
             'category' => 'required|string|max:255',
@@ -52,8 +52,22 @@ class ProductController extends Controller
             'code_manufactur' => 'required|string|max:255|unique:products,code_manufactur',
         ]);
 
+        $user = Auth::user(); // Ambil pengguna yang sedang login
+
         // Tambahkan ID pengguna yang sedang login ke data produk
-        $validation['created_by'] = Auth::id(); // Menggunakan Auth::id()
+        $validation['created_by'] = $user->id;
+
+        // Cek apakah pengguna adalah branch_admin
+        if ($user->role === 'branch_admin') {
+            // Jika branch_admin, branch_id diambil otomatis dari pengguna yang login
+            $validation['branch_id'] = $user->branch_id;
+        } elseif ($user->role === 'admin') {
+            // Jika admin (super admin), validasi dan pilih branch_id secara manual
+            $request->validate([
+                'branch_id' => 'required|integer|exists:branches,id'
+            ]);
+            $validation['branch_id'] = $request->branch_id;
+        }
 
         // Buat produk baru
         try {
@@ -74,6 +88,7 @@ class ProductController extends Controller
         session()->flash('error', 'Some Problem Occurred');
         return redirect(route('admin.products.create'))->withInput();
     }
+
 
 
 
