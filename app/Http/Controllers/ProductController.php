@@ -7,6 +7,9 @@ use App\Models\Product;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\ProductsImport;
+use App\Exports\ProductsExport;
 
 class ProductController extends Controller
 {
@@ -234,6 +237,23 @@ public function saveBranchProduct(Request $request)
     ]);
 
     return redirect()->route('branch.products.index')->with('success', 'Product added successfully.');
+}
+    public function import(Request $request)
+    {
+        // Validate the uploaded file
+        $request->validate([
+            'file' => 'required|mimes:xls,xlsx',
+        ]);
+
+        // Import the Excel file
+        Excel::import(new ProductsImport, $request->file('file'));
+
+        return redirect()->route('admin.products')->with('success', 'Products imported successfully!');
+    }
+
+public function export()
+{
+    return Excel::download(new ProductsExport, 'products.xlsx');
 }
 
 }

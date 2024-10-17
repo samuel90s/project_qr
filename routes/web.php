@@ -75,6 +75,10 @@ Route::middleware(['auth'])->group(function () {
 });
 
 
+Route::get('admin/products/export', [ProductController::class, 'export'])->name('admin.products.export');
+Route::post('/admin/products/import', [ProductController::class, 'import'])->name('admin.products.import');
+
+
 
 require __DIR__.'/auth.php';
 require __DIR__.'/../vendor/autoload.php';

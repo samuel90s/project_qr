@@ -16,7 +16,22 @@
                         @endif
                     </div>
                     <hr>
+                    <!-- Form Import Produk -->
+                    @if (Auth::user()->role === 'admin')
+                    <form action="{{ route('admin.products.import') }}" method="POST" enctype="multipart/form-data" class="mb-4">
+                        @csrf
+                        <div class="form-group">
+                            <input type="file" name="file" class="form-control" required>
+                        </div>
+                        <br>
+                        <button type="submit" class="btn btn-success">Import Products</button>
+                    </form>
 
+                    <!-- Form Ekspor Produk -->
+                    <form action="{{ route('admin.products.export') }}" method="GET" class="mb-4">
+                        <button type="submit" class="btn btn-info">Export Products</button>
+                    </form>
+                    @endif
                     @if (Session::has('success'))
                         <div class="alert alert-success" role="alert">
                             {{ Session::get('success') }}
