@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('company');
             $table->string('username')->unique();
-            $table->string('role')->default('user');
+            $table->string('role')->default('branch_admin'); // Default role branch_admin
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

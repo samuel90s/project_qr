@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Product;
@@ -15,35 +16,20 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $user = Auth::user(); // Ambil pengguna yang sedang login
+        $user = Auth::user(); // Get the currently authenticated user
 
+        // Fetch products based on user role
         if ($user->role === 'admin') {
-            // Jika admin, ambil semua produk
             $products = Product::orderBy('id', 'desc')->get();
         } elseif ($user->role === 'branch_admin') {
-            // Jika branch admin, ambil produk berdasarkan branch_id pengguna
-            $products = Product::where('branch_id', $user->branch_id)->orderBy('id', 'desc')->get();
-        } elseif ($user->role === 'user') {
-            // Jika user biasa, ambil produk hanya di cabang mereka
             $products = Product::where('branch_id', $user->branch_id)->orderBy('id', 'desc')->get();
         } else {
-            // Jika tidak ada role yang dikenali
-            $products = collect(); // Mengembalikan koleksi kosong
+            $products = collect(); // Return an empty collection for unrecognized roles
         }
 
-        $total = $products->count(); // Hitung total produk
+        $total = $products->count(); // Count total products
 
         return view('admin.product.home', compact('products', 'total'));
-    }
-
-
-    public function userIndex()
-    {
-        $user = Auth::user(); // Ambil pengguna yang sedang login
-        $products = Product::where('branch_id', $user->branch_id)->orderBy('id', 'desc')->get();
-        $total = $products->count();
-
-        return view('user.product.index', compact('products', 'total')); // Ganti 'user.product.index' sesuai dengan view kamu
     }
 
     public function create()
@@ -53,13 +39,8 @@ class ProductController extends Controller
 
     public function save(Request $request)
     {
-        // Pastikan pengguna sudah login
-        if (!Auth::check()) {
-            return redirect()->route('login')->withErrors(['message' => 'You need to be logged in.']);
-        }
-
-        // Validasi data umum yang diterima
-        $validation = $request->validate([
+        // Validate product data
+        $validatedData = $request->validate([
             'title' => 'required|string|max:255',
             'category' => 'required|string|max:255',
             'price' => 'required|numeric',
@@ -68,195 +49,184 @@ class ProductController extends Controller
             'code_manufactur' => 'required|string|max:255|unique:products,code_manufactur',
         ]);
 
-        $user = Auth::user(); // Ambil pengguna yang sedang login
+        // Create new product
+        $product = Product::create($validatedData + ['branch_id' => Auth::user()->branch_id, 'created_by' => Auth::id()]);
 
-        // Tambahkan ID pengguna yang sedang login ke data produk
-        $validation['created_by'] = $user->id;
+        // Generate QR code link and save it
+        $product->qr_code_link = $this->generateQrCodeLink($product->id);
+        $product->save();
 
-        // Cek apakah pengguna adalah branch_admin
-        if ($user->role === 'branch_admin') {
-            // Jika branch_admin, branch_id diambil otomatis dari pengguna yang login
-            $validation['branch_id'] = $user->branch_id;
-        } elseif ($user->role === 'admin') {
-            // Jika admin (super admin), validasi dan pilih branch_id secara manual
-            $request->validate([
-                'branch_id' => 'required|integer|exists:branches,id'
-            ]);
-            $validation['branch_id'] = $request->branch_id;
-        }
+        // Generate and save QR code image
+        $this->generateQrCode($product->qr_code_link);
 
-        // Buat produk baru
-        try {
-            $data = Product::create($validation);
-
-            // Cek apakah data berhasil disimpan
-            if ($data) {
-                session()->flash('success', 'Product Added Successfully');
-                return redirect(route('admin.products'));
-            }
-        } catch (\Exception $e) {
-            // Jika terjadi kesalahan saat menyimpan data
-            session()->flash('error', 'Some Problem Occurred: ' . $e->getMessage());
-            return redirect()->back()->withInput();
-        }
-
-        // Jika tidak berhasil, kembalikan ke form dengan error
-        session()->flash('error', 'Some Problem Occurred');
-        return redirect(route('admin.products.create'))->withInput();
+        return redirect()->route('admin.products')->with('success', 'Product created and QR code generated!');
     }
-
-
-
 
     public function edit($id)
-{
-    $product = Product::find($id);
-    return view('admin.product.edit', compact('product'));
-}
-
-public function update(Request $request, $id)
-{
-    $product = Product::findOrFail($id);
-
-    // Validasi data jika diperlukan
-    $request->validate([
-        'title' => 'required|string|max:255',
-        'category' => 'required|string|max:255',
-        'price' => 'required|string|max:255',
-        'serial' => 'required|string|max:255',
-        'certificate' => 'nullable|string|max:255',
-        'image' => 'nullable|image|max:2048',
-    ]);
-
-    // Update atribut produk
-    $product->title = $request->title;
-    $product->category = $request->category;
-    $product->price = $request->price;
-    $product->serial = $request->serial;
-    $product->certificate = $request->certificate;
-
-    // Tambahkan ID pengguna yang mengedit produk
-    $product->edited_by = Auth::id(); // Menggunakan Auth untuk mendapatkan ID pengguna
-
-    if ($request->hasFile('image')) {
-        $image = $request->file('image');
-        $filename = $image->getClientOriginalName();
-        $image->move(public_path('images/products'), $filename);
-        $product->image = $filename; // Jika ada kolom gambar di tabel
+    {
+        $product = Product::findOrFail($id);
+        return view('admin.product.edit', compact('product'));
     }
 
-    $product->save();
+    public function update(Request $request, $id)
+    {
+        // Find the product or fail with a 404 error
+        $product = Product::findOrFail($id);
 
-    return redirect()->route('admin.products')->with(['success' => 'Product updated successfully']);
-}
+        // Validate request data
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|max:255',
+            'price' => 'required|numeric',
+            'serial' => 'required|string|max:255',
+            'certificate' => 'nullable|string|max:255',
+            'image' => 'nullable|image|max:2048',
+        ]);
 
+        // Update product attributes
+        $product->fill($request->only('title', 'category', 'price', 'serial', 'certificate'));
+        $product->edited_by = Auth::id(); // Record who edited the product
 
-    public function delete(Request $request, $id)
+        // Handle image upload if present
+        if ($request->hasFile('image')) {
+            $this->handleImageUpload($product, $request->file('image'));
+        }
+
+        // Check and generate QR code if it doesn't exist
+        if (!$product->qr_code_link) {
+            $product->qr_code_link = $this->generateQrCodeLink($product->id);
+            $this->generateQrCode($product->qr_code_link);
+        }
+
+        // Save updated product
+        $product->save();
+
+        return redirect()->route('admin.products')->with(['success' => 'Product updated successfully']);
+    }
+
+    public function delete($id)
     {
         $product = Product::findOrFail($id);
 
         if ($product->delete()) {
             return redirect()->route('admin.products')->with(['success' => 'Product deleted successfully']);
-        } else {
-            return redirect()->route('admin.products')->with(['error' => 'Failed to delete product']);
         }
+
+        return redirect()->route('admin.products')->with(['error' => 'Failed to delete product']);
     }
 
-    public function generateQrCode($text)
-{
-    $options = new QROptions([
-        'version'    => 5,
-        'outputType' => QRCode::OUTPUT_IMAGE_PNG,
-        'eccLevel'   => QRCode::ECC_L,
-    ]);
-
-    $qrcode = new QRCode($options);
-    $imagePath = public_path('qrcode_' . Str::random(10) . '.png'); // Buat nama file acak untuk menghindari penimpaan
-    $qrcode->render($text, $imagePath);
-
-    return $imagePath; // Kembalikan path file
-}
-
-public function showQrCode($id)
-{
-    $product = Product::find($id);
-
-    if (!$product) {
-        return response()->json(['message' => 'Product not found'], 404);
-    }
-
-    // Menghasilkan link QR Code dengan format acak
-    $uniqueCode = Str::random(10); // Menghasilkan kode acak
-    $data = route('admin.products.detail', ['id' => $product->id, 'code' => $uniqueCode]); // Link detail produk
-
-    // Simpan link QR Code dalam database jika diperlukan
-    // $product->qr_code_link = $data; // Jika Anda ingin menyimpan link di database
-    // $product->save();
-
-    $qrCodePath = $this->generateQrCode($data); // Generate QR code dan ambil path file
-
-    return response()->download($qrCodePath, 'qrcode.png', [
-        'Content-Type' => 'image/png'
-    ]);
-}
-
-public function detail($id)
-{
-    $product = Product::find($id);
-
-    if (!$product) {
-        return redirect()->route('admin.products')->with(['error' => 'Product not found']);
-    }
-
-    return view('admin.product.detail', compact('product'));
-}
-public function createBranchProduct()
-{
-    return view('branch.products.create'); // Buat view untuk menambahkan produk
-}
-
-public function saveBranchProduct(Request $request)
-{
-    $request->validate([
-        'title' => 'required|string|max:255',
-        'category' => 'required|string|max:255',
-        'price' => 'required|numeric',
-        // Tambahkan validasi lainnya sesuai kebutuhan
-    ]);
-
-    // Mengambil branch_id dari pengguna yang sedang login
-    $branchId = Auth::user()->branch_id;
-
-    // Simpan produk baru
-    Product::create([
-        'title' => $request->title,
-        'category' => $request->category,
-        'price' => $request->price,
-        'branch_id' => $branchId, // Mengaitkan produk dengan cabang
-        // Tambahkan kolom lainnya sesuai kebutuhan
-    ]);
-
-    return redirect()->route('branch.products.index')->with('success', 'Product added successfully.');
-}
-    public function import(Request $request)
+    private function generateQrCode($text)
     {
-        // Validate the uploaded file
-        $request->validate([
-            'file' => 'required|mimes:xls,xlsx',
+        $options = new QROptions([
+            'version'    => 5,
+            'outputType' => QRCode::OUTPUT_IMAGE_PNG,
+            'eccLevel'   => QRCode::ECC_L,
         ]);
 
-        // Import the Excel file
-        Excel::import(new ProductsImport, $request->file('file'));
+        $qrcode = new QRCode($options);
+        $imagePath = 'qrcode_' . Str::random(10) . '.png';
+        $qrcode->render($text, public_path($imagePath));
 
-        return redirect()->route('admin.products')->with('success', 'Products imported successfully!');
+        return $imagePath; // Return QR code image path
     }
 
-public function export()
-{
-    return Excel::download(new ProductsExport, 'products.xlsx');
+    private function generateQrCodeLink($productId)
+    {
+        $uniqueCode = Str::random(10);
+        return route('public.products.detail', ['id' => $productId, 'code' => $uniqueCode]);
+    }
+
+    private function handleImageUpload($product, $image)
+    {
+        // Optionally delete the old image
+        if ($product->image) {
+            $oldImagePath = public_path('images/products/' . $product->image);
+            if (file_exists($oldImagePath)) {
+                unlink($oldImagePath);
+            }
+        }
+
+        // Save the new image
+        $filename = time() . '_' . $image->getClientOriginalName();
+        $image->move(public_path('images/products'), $filename);
+        $product->image = $filename;
+    }
+
+    public function showQrCode($id)
+    {
+        // Ambil data produk berdasarkan ID
+        $product = Product::findOrFail($id);
+
+        // Buat URL untuk QR code
+        $qrCodeLink = url('/public/products/' . $product->id . '/detail/' . $product->qr_code_link);
+
+        // Opsi untuk QR Code
+        $options = new QROptions([
+            'version'      => 5,
+            'outputType'   => QRCode::OUTPUT_IMAGE_PNG,
+            'eccLevel'     => QRCode::ECC_L, // Level error correction
+            'scale'        => 5,
+        ]);
+
+        // Hasilkan QR Code
+        $qrCode = new QRCode($options);
+        $imageData = base64_encode($qrCode->render($qrCodeLink));
+
+        // Kirimkan image data dan produk ke view
+        return view('admin.product.qrcode', ['imageData' => $imageData, 'product' => $product]);
+    }
+    public function detail($id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        return view('admin.product.detail', compact('product'));
+    }
+
+    public function createBranchProduct()
+    {
+        return view('branch.products.create'); // View for adding products
+    }
+
+    public function saveBranchProduct(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|max:255',
+            'price' => 'required|numeric',
+            // Additional validations as needed
+        ]);
+
+        // Get branch_id from the authenticated user
+        $branchId = Auth::user()->branch_id;
+
+        // Create new product linked to the branch
+        Product::create($request->only('title', 'category', 'price') + [
+            'branch_id' => $branchId,
+            'created_by' => Auth::id(), // Save who created the product
+        ]);
+
+        return redirect()->route('branch.products.index')->with('success', 'Product added successfully.');
+    }
+
+    public function importExcel(Request $request)
+    {
+        // Validate the file
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:2048',
+        ]);
+
+        // Import Excel file
+        Excel::import(new ProductsImport, $request->file('file'));
+
+        return redirect()->route('admin.products')->with('success', 'Products imported successfully.');
+    }
+
+    public function exportExcel()
+    {
+        return Excel::download(new ProductsExport, 'products.xlsx');
+    }
 }
-
-}
-
-
-
