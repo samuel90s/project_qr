@@ -11,11 +11,12 @@
                 <div class="p-6 text-gray-900">
                     <div class="d-flex align-items-center justify-content-between mb-4">
                         <h2 class="mb-0">List Product</h2>
-                        @if (Auth::user()->role === 'admin' || Auth::user()->role === 'branch_admin');
+                        @if (Auth::user()->role === 'admin' || Auth::user()->role === 'branch_admin')
                             <a href="{{ route('admin.products.create') }}" class="btn btn-primary">Add Product</a>
                         @endif
                     </div>
                     <hr>
+
                     <!-- Form Import Produk -->
                     @if (Auth::user()->role === 'admin')
                     <form action="{{ route('admin.products.import') }}" method="POST" enctype="multipart/form-data" class="mb-4">
@@ -32,12 +33,13 @@
                         <button type="submit" class="btn btn-info">Export Products</button>
                     </form>
                     @endif
+
+                    <!-- Pesan Sukses dan Error -->
                     @if (Session::has('success'))
                         <div class="alert alert-success" role="alert">
                             {{ Session::get('success') }}
                         </div>
                     @endif
-
                     @if (Session::has('error'))
                         <div class="alert alert-danger" role="alert">
                             {{ Session::get('error') }}
@@ -84,7 +86,9 @@
                                     </td>
                                     <td>
                                         @if($product->qr_code_path)
-                                            <img src="{{ asset($product->qr_code_path) }}" alt="QR Code" width="50" height="50">
+                                            <a href="{{ asset($product->qr_code_path) }}" target="_blank">
+                                                <img src="{{ asset($product->qr_code_path) }}" alt="QR Code" width="50" height="50">
+                                            </a>
                                         @else
                                             <a href="{{ route('admin.products.qrcode', $product->id) }}" class="btn btn-secondary">
                                                 Generate QR Code

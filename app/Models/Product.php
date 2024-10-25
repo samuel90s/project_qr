@@ -18,7 +18,9 @@ class Product extends Model
         'code_manufactur',
         'created_by',
         'edited_by',
-        'branch_id'
+        'branch_id',
+        'qr_code_link',
+        'image',
     ];
     public function branch()
     {

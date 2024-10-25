@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\ProductsImport;
 use App\Exports\ProductsExport;
+use Illuminate\Support\Facades\File;
 
 class ProductController extends Controller
 {
@@ -36,11 +37,8 @@ class ProductController extends Controller
     {
         $user = Auth::user(); // Get the currently authenticated user
 
-        // Jika pengguna adalah admin, berikan opsi untuk memilih cabang (branch)
-        $branches = [];
-        if ($user->role === 'admin') {
-            $branches = \App\Models\Branch::all(); // Ambil semua data cabang
-        }
+        // If user is admin, provide options to select branches
+        $branches = $user->role === 'admin' ? \App\Models\Branch::all() : [];
 
         return view('admin.product.create', compact('branches'));
     }
@@ -49,7 +47,7 @@ class ProductController extends Controller
     {
         $user = Auth::user(); // Get the currently authenticated user
 
-        // Validasi data produk
+        // Validate product data
         $validatedData = $request->validate([
             'title' => 'required|string|max:255',
             'category' => 'required|string|max:255',
@@ -57,25 +55,23 @@ class ProductController extends Controller
             'serial' => 'required|string|max:255',
             'certificate' => 'required|string|max:255',
             'code_manufactur' => 'required|string|max:255|unique:products,code_manufactur',
-            'branch_id' => 'required_if:role,admin|exists:branches,id' // Hanya admin yang bisa memilih cabang
+            'branch_id' => 'required_if:role,admin|exists:branches,id', // Only admin can select a branch
         ]);
 
-        // Tentukan branch_id berdasarkan peran pengguna
-        $branchId = $user->role === 'admin'
-            ? $request->input('branch_id')  // Admin memilih cabang
-            : $user->branch_id;             // Branch admin menggunakan cabangnya sendiri
+        // Determine branch_id based on user role
+        $branchId = $user->role === 'admin' ? $request->input('branch_id') : $user->branch_id; // Branch admin uses their own branch
 
-        // Tambahkan data produk baru
+        // Create new product
         $product = Product::create($validatedData + [
-            'branch_id' => $branchId,     // Menggunakan branch_id yang ditentukan
-            'created_by' => $user->id     // Menyimpan ID pengguna yang membuat produk
+            'branch_id' => $branchId,
+            'created_by' => $user->id, // Save the ID of the user who created the product
         ]);
 
-        // Generate QR code link dan simpan ke produk
-        $product->qr_code_link = $this->generateQrCodeLink($product->id);
+        // Generate QR code link and save to product, including the code
+        $product->qr_code_link = $this->generateQrCodeLink($product->id, $product->code_manufactur);
         $product->save();
 
-        // Generate dan simpan gambar QR code
+        // Generate and save QR code image
         $this->generateQrCode($product->qr_code_link);
 
         return redirect()->route('admin.products')->with('success', 'Product created and QR code generated!');
@@ -86,11 +82,8 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
         $user = Auth::user();
 
-        // Admin bisa memilih cabang saat mengedit produk
-        $branches = [];
-        if ($user->role === 'admin') {
-            $branches = \App\Models\Branch::all(); // Ambil semua cabang
-        }
+        // Admin can select branches when editing a product
+        $branches = $user->role === 'admin' ? \App\Models\Branch::all() : [];
 
         return view('admin.product.edit', compact('product', 'branches'));
     }
@@ -100,46 +93,46 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
         $user = Auth::user(); // Get the currently authenticated user
 
-        // Validasi data produk
+        // Validate product data
         $validatedData = $request->validate([
             'title' => 'required|string|max:255',
             'category' => 'required|string|max:255',
             'price' => 'required|numeric',
             'serial' => 'required|string|max:255',
             'certificate' => 'nullable|string|max:255',
-            'branch_id' => 'required_if:role,admin|exists:branches,id', // Admin bisa memilih cabang
+            'branch_id' => 'required_if:role,admin|exists:branches,id', // Admin can select branches
             'image' => 'nullable|image|max:2048',
         ]);
 
-        // Tentukan branch_id berdasarkan peran pengguna
+        // Determine branch_id based on user role
         if ($user->role === 'admin') {
-            $product->branch_id = $request->input('branch_id'); // Admin bisa mengubah cabang
+            $product->branch_id = $request->input('branch_id'); // Admin can change branch
         }
 
-        // Cek jika branch admin sudah mengedit produk
+        // Check if branch admin has already edited this product
         if ($user->role === 'branch_admin') {
-            if ($product->is_edited == 1) {
+            if ($product->is_edited) {
                 return redirect()->route('admin.products')->with('error', 'You have already edited this product once.');
             }
-            $product->is_edited = 1; // Tandai produk sudah diedit
+            $product->is_edited = 1; // Mark product as edited
         }
 
-        // Update data produk
+        // Update product data
         $product->fill($validatedData);
-        $product->edited_by = $user->id; // Catat siapa yang mengedit produk
+        $product->edited_by = $user->id; // Record who edited the product
 
-        // Jika ada gambar baru yang diunggah
+        // If a new image is uploaded
         if ($request->hasFile('image')) {
             $this->handleImageUpload($product, $request->file('image'));
         }
 
-        // Generate QR code jika belum ada
+        // Generate QR code if it doesn't exist
         if (!$product->qr_code_link) {
-            $product->qr_code_link = $this->generateQrCodeLink($product->id);
+            $product->qr_code_link = $this->generateQrCodeLink($product->id, $product->code_manufactur);
             $this->generateQrCode($product->qr_code_link);
         }
 
-        // Simpan produk yang telah diupdate
+        // Save the updated product
         $product->save();
 
         return redirect()->route('admin.products')->with('success', 'Product updated successfully.');
@@ -150,31 +143,46 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
 
         if ($product->delete()) {
-            return redirect()->route('admin.products')->with(['success' => 'Product deleted successfully']);
+            return redirect()->route('admin.products')->with('success', 'Product deleted successfully.');
         }
 
-        return redirect()->route('admin.products')->with(['error' => 'Failed to delete product']);
+        return redirect()->route('admin.products')->with('error', 'Failed to delete product.');
     }
 
     private function generateQrCode($text)
     {
+        // Tentukan path folder untuk QR code
+        $folderPath = public_path('qrcodes');
+
+        // Periksa apakah folder qrcodes ada, jika tidak buat folder
+        if (!File::exists($folderPath)) {
+            File::makeDirectory($folderPath, 0755, true); // Buat folder dengan izin yang sesuai
+        }
+
         $options = new QROptions([
-            'version'    => 5,
+            'version' => 5,
             'outputType' => QRCode::OUTPUT_IMAGE_PNG,
-            'eccLevel'   => QRCode::ECC_L,
+            'eccLevel' => QRCode::ECC_L,
         ]);
 
         $qrcode = new QRCode($options);
-        $imagePath = 'qrcode_' . Str::random(10) . '.png';
-        $qrcode->render($text, public_path($imagePath));
+        $imageName = 'qrcode_' . Str::random(10) . '.png'; // Menyimpan QR code dengan nama acak
+        $imagePath = $folderPath . '/' . $imageName; // Path lengkap untuk menyimpan gambar
 
-        return $imagePath; // Return QR code image path
+        try {
+            $qrcode->render($text, $imagePath); // Generate QR code dan simpan
+        } catch (\Exception $e) {
+            // Menangani kesalahan saat membuat QR code
+            return response()->json(['error' => 'QR code generation failed: ' . $e->getMessage()]);
+        }
+
+        return $imageName; // Return nama file QR code
     }
 
-    private function generateQrCodeLink($productId)
+    private function generateQrCodeLink($productId, $code)
     {
-        $uniqueCode = Str::random(10);
-        return route('public.products.detail', ['id' => $productId, 'code' => $uniqueCode]);
+        // Generate a direct link to the product detail route including the code
+        return route('public.products.detail', ['id' => $productId, 'code' => $code]);
     }
 
     private function handleImageUpload($product, $image)
@@ -195,34 +203,30 @@ class ProductController extends Controller
 
     public function showQrCode($id)
     {
-        // Ambil data produk berdasarkan ID
+        // Get product data by ID
         $product = Product::findOrFail($id);
 
-        // Buat URL untuk QR code
-        $qrCodeLink = url('/public/products/' . $product->id . '/detail/' . $product->qr_code_link);
+        // Generate a unique URL for QR code with a unique code
+        $qrCodeLink = $this->generateQrCodeLink($product->id, $product->code_manufactur);
 
-        // Opsi untuk QR Code
-        $options = new QROptions([
-            'version'      => 5,
-            'outputType'   => QRCode::OUTPUT_IMAGE_PNG,
-            'eccLevel'     => QRCode::ECC_L, // Level error correction
-            'scale'        => 5,
-        ]);
+        // Generate QR Code and save as image
+        $qrCodeImageName = $this->generateQrCode($qrCodeLink);
 
-        // Hasilkan QR Code
-        $qrCode = new QRCode($options);
-        $imageData = base64_encode($qrCode->render($qrCodeLink));
-
-        // Kirimkan image data dan produk ke view
-        return view('admin.product.qrcode', ['imageData' => $imageData, 'product' => $product]);
+        // Mengembalikan QR Code yang telah dihasilkan
+        return response()->download(public_path('qrcodes/' . $qrCodeImageName))->deleteFileAfterSend(true);
     }
 
-    public function detail($id)
+    public function detail($id, $code)
     {
         $product = Product::find($id);
 
         if (!$product) {
             return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        // Validasi kode produk
+        if ($product->code_manufactur !== $code) {
+            return response()->json(['message' => 'Invalid product code'], 404);
         }
 
         return view('admin.product.detail', compact('product'));
@@ -256,9 +260,8 @@ class ProductController extends Controller
 
     public function importExcel(Request $request)
     {
-        // Validate the file upload
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls|max:2048',
+            'file' => 'required|mimes:xlsx,xls',
         ]);
 
         // Import products from the uploaded Excel file
@@ -269,6 +272,6 @@ class ProductController extends Controller
 
     public function exportExcel()
     {
-        return Excel::download(new ProductsExport, 'products.xlsx'); // Download products as Excel file
+        return Excel::download(new ProductsExport, 'products.xlsx');
     }
 }
