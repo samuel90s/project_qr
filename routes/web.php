@@ -32,7 +32,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/products/create', [ProductController::class, 'create'])->name('admin.products.create');
     Route::post('/admin/products/save', [ProductController::class, 'save'])->name('admin.products.save');
     Route::get('/admin/products/{id}/edit', [ProductController::class, 'edit'])->name('admin.products.edit');
-    Route::post('/admin/products/{id}/update', [ProductController::class, 'update'])->name('admin.products.update');
+    Route::put('/admin/products/{id}/update', [ProductController::class, 'update'])->name('admin.products.update');
     Route::get('/admin/products/{id}/delete', [ProductController::class, 'delete'])->name('admin.products.delete');
 
     // Rute QR Code dan detail produk khusus admin

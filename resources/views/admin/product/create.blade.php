@@ -21,9 +21,28 @@
                     </div>
                     <form action="{{ route('admin.products.save') }}" method="POST" enctype="multipart/form-data">
                         @csrf
+
+                        {{-- Tampilkan pilihan branch jika user adalah admin --}}
+                        @if (auth()->user()->role === 'admin')
                         <div class="row mb-3">
                             <div class="col-md-4">
-                                <label for="title" class="form-label">Title</label>
+                                <label for="branch_id" class="form-label">Branch</label>
+                                <select name="branch_id" class="form-select">
+                                    <option value="">Select Branch</option>
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('branch_id')
+                                    <span class="text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+                        @endif
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="title" class="form-label">Product Title</label>
                                 <input type="text" name="title" class="form-control" placeholder="Title" value="{{ old('title') }}">
                                 @error('title')
                                     <span class="text-danger">{{ $message }}</span>
